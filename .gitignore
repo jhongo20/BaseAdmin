@@ -1,0 +1,59 @@
+# Archivos y carpetas de .NET Core
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Archivos de compilación
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+
+# Paquetes NuGet
+*.nupkg
+# Carpeta de paquetes NuGet
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Archivos de proyecto específicos de Visual Studio
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Archivos de entorno y configuración local
+appsettings.Development.json
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Directorios de herramientas
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Archivos temporales
+*~
+*.swp
+*.bak
+*.tmp
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Directorios de publicación
+publish/
+**/Properties/PublishProfiles/
+**/Properties/ServiceDependencies/
