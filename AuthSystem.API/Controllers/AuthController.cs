@@ -23,17 +23,20 @@ namespace AuthSystem.API.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IJwtService _jwtService;
         private readonly ILdapService _ldapService;
+        private readonly IAccountLockoutService _accountLockoutService;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             IUnitOfWork unitOfWork,
             IJwtService jwtService,
             ILdapService ldapService,
+            IAccountLockoutService accountLockoutService,
             ILogger<AuthController> logger)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
             _ldapService = ldapService;
+            _accountLockoutService = accountLockoutService;
             _logger = logger;
         }
 
@@ -56,6 +59,13 @@ namespace AuthSystem.API.Controllers
                 if (!user.IsActive)
                 {
                     return Unauthorized("User account is inactive");
+                }
+
+                // Verificar si la cuenta está bloqueada
+                if (_accountLockoutService.IsAccountLocked(user))
+                {
+                    var remainingMinutes = Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+                    return Unauthorized($"Account is locked. Please try again after {remainingMinutes} minute(s)");
                 }
 
                 bool isAuthenticated = false;
@@ -82,8 +92,13 @@ namespace AuthSystem.API.Controllers
 
                 if (!isAuthenticated)
                 {
+                    // Registrar intento fallido y posiblemente bloquear la cuenta
+                    await _accountLockoutService.RecordFailedLoginAttemptAsync(user);
                     return Unauthorized("Invalid username or password");
                 }
+
+                // Registrar inicio de sesión exitoso y resetear contador de intentos fallidos
+                await _accountLockoutService.RecordSuccessfulLoginAttemptAsync(user);
 
                 // Obtener roles y permisos del usuario
                 var userRoles = await _unitOfWork.UserRoles.GetByUserAsync(user.Id);

@@ -52,7 +52,7 @@ El sistema gestiona las siguientes entidades principales:
 - Integración con LDAP/Active Directory
 - Tokens JWT para autenticación stateless
 - Tokens de refresco para renovación de sesiones
-- Bloqueo de cuentas tras múltiples intentos fallidos
+- Bloqueo de cuentas tras múltiples intentos fallidos de inicio de sesión
 
 ### 2. Autorización
 
@@ -183,13 +183,17 @@ Las contraseñas se almacenan utilizando el algoritmo BCrypt, que incluye:
 El sistema implementa varias capas de protección:
 
 1. **Rate Limiting**: Limita el número de solicitudes por IP y cliente
-2. **Headers de seguridad**:
+2. **Bloqueo de cuentas**: 
+   - Bloqueo temporal después de múltiples intentos fallidos de inicio de sesión
+   - Duración y número de intentos configurables
+   - Desbloqueo manual por administradores
+   - Registro detallado de intentos fallidos
+3. **Headers de seguridad**:
    - Content-Security-Policy
    - X-XSS-Protection
    - X-Frame-Options
    - X-Content-Type-Options
-3. **Validación de entradas**: Previene inyecciones SQL y XSS
-4. **Bloqueo de cuentas**: Previene ataques de fuerza bruta
+4. **Validación de entradas**: Previene inyecciones SQL y XSS
 
 ## Datos iniciales
 

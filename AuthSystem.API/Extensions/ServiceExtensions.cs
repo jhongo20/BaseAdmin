@@ -45,6 +45,7 @@ namespace AuthSystem.API.Extensions
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<ILdapService, LdapService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IAccountLockoutService, AccountLockoutService>();
             
             return services;
         }
