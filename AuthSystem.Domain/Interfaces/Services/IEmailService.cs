@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using AuthSystem.Domain.Models;
 
 namespace AuthSystem.Domain.Interfaces.Services
 {
@@ -138,6 +139,46 @@ namespace AuthSystem.Domain.Interfaces.Services
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Envía un correo electrónico de activación de cuenta
+        /// </summary>
+        /// <param name="email">Dirección de correo del destinatario</param>
+        /// <param name="username">Nombre de usuario</param>
+        /// <param name="fullName">Nombre completo del usuario</param>
+        /// <param name="activationToken">Token de activación</param>
+        /// <param name="activationUrl">URL de activación</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>True si el correo se envió correctamente</returns>
+        Task<bool> SendAccountActivationEmailAsync(
+            string email,
+            string username,
+            string fullName,
+            string activationToken,
+            string activationUrl,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Envía un correo electrónico de alerta de seguridad
+        /// </summary>
+        /// <param name="email">Dirección de correo del destinatario</param>
+        /// <param name="username">Nombre de usuario</param>
+        /// <param name="fullName">Nombre completo del usuario</param>
+        /// <param name="alertType">Tipo de alerta</param>
+        /// <param name="details">Detalles adicionales de la alerta</param>
+        /// <param name="ipAddress">Dirección IP desde donde se realizó la acción</param>
+        /// <param name="userAgent">Información del navegador/dispositivo</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>True si el correo se envió correctamente</returns>
+        Task<bool> SendSecurityAlertEmailAsync(
+            string email,
+            string username,
+            string fullName,
+            string alertType,
+            string details,
+            string ipAddress,
+            string userAgent,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Envía un correo usando una plantilla
         /// </summary>
         /// <param name="to">Dirección de correo del destinatario</param>
@@ -158,26 +199,5 @@ namespace AuthSystem.Domain.Interfaces.Services
             IEnumerable<string> bcc = null,
             IEnumerable<EmailAttachment> attachments = null,
             CancellationToken cancellationToken = default);
-    }
-
-    /// <summary>
-    /// Clase para representar un archivo adjunto en un correo
-    /// </summary>
-    public class EmailAttachment
-    {
-        /// <summary>
-        /// Nombre del archivo
-        /// </summary>
-        public string FileName { get; set; }
-
-        /// <summary>
-        /// Contenido del archivo en bytes
-        /// </summary>
-        public byte[] Content { get; set; }
-
-        /// <summary>
-        /// Tipo de contenido (MIME)
-        /// </summary>
-        public string ContentType { get; set; }
     }
 }

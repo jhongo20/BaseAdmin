@@ -48,6 +48,16 @@ namespace AuthSystem.Domain.Interfaces.Services
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Valida un token de actualización
+        /// </summary>
+        /// <param name="refreshToken">Token de actualización</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Tupla con (esValido, idUsuario)</returns>
+        Task<(bool isValid, Guid userId)> ValidateRefreshTokenAsync(
+            string refreshToken,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Valida un token JWT
         /// </summary>
         /// <param name="token">Token JWT</param>
@@ -179,6 +189,46 @@ namespace AuthSystem.Domain.Interfaces.Services
             string token,
             string purpose,
             Guid userId,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Genera un token para restablecimiento de contraseña
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Token generado</returns>
+        Task<string> GeneratePasswordResetTokenAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Valida un token de restablecimiento de contraseña
+        /// </summary>
+        /// <param name="token">Token</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>ID del usuario o null si el token no es válido</returns>
+        Task<Guid?> ValidatePasswordResetTokenAsync(
+            string token,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Genera un token para activación de cuenta
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Token generado</returns>
+        Task<string> GenerateAccountActivationTokenAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Valida un token de activación de cuenta
+        /// </summary>
+        /// <param name="token">Token</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>ID del usuario o null si el token no es válido</returns>
+        Task<Guid?> ValidateAccountActivationTokenAsync(
+            string token,
             CancellationToken cancellationToken = default);
     }
 }

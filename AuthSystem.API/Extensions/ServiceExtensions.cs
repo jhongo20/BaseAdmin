@@ -1,7 +1,9 @@
 using AuthSystem.Domain.Interfaces;
 using AuthSystem.Domain.Interfaces.Repositories;
+using AuthSystem.Domain.Interfaces.Services;
 using AuthSystem.Infrastructure.Persistence;
 using AuthSystem.Infrastructure.Persistence.Repositories;
+using AuthSystem.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace AuthSystem.API.Extensions
@@ -20,6 +22,7 @@ namespace AuthSystem.API.Extensions
             services.AddScoped<IUserBranchRepository, UserBranchRepository>();
             services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
             services.AddScoped<IUserSessionRepository, UserSessionRepository>();
+            services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             
             return services;
         }
@@ -32,6 +35,16 @@ namespace AuthSystem.API.Extensions
                     b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            
+            return services;
+        }
+
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        {
+            // Registrar servicios de la aplicación
+            services.AddScoped<IJwtService, JwtService>();
+            services.AddScoped<ILdapService, LdapService>();
+            services.AddScoped<IEmailService, EmailService>();
             
             return services;
         }

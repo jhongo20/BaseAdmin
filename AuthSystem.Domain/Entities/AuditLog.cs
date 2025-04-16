@@ -89,6 +89,31 @@ namespace AuthSystem.Domain.Entities
         public string AdditionalInfo { get; set; }
 
         /// <summary>
+        /// Cadena de consulta de la solicitud HTTP
+        /// </summary>
+        public string QueryString { get; set; }
+
+        /// <summary>
+        /// Datos de la solicitud HTTP
+        /// </summary>
+        public string RequestData { get; set; }
+
+        /// <summary>
+        /// Datos de la respuesta HTTP
+        /// </summary>
+        public string ResponseData { get; set; }
+
+        /// <summary>
+        /// Código de estado HTTP
+        /// </summary>
+        public int? StatusCode { get; set; }
+
+        /// <summary>
+        /// Marca de tiempo de la acción
+        /// </summary>
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
         /// Nivel de severidad del evento (informativo, advertencia, error)
         /// </summary>
         public string Severity { get; set; }

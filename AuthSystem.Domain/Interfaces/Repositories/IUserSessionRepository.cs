@@ -44,6 +44,14 @@ namespace AuthSystem.Domain.Interfaces.Repositories
         Task<UserSession> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Obtiene una sesión por su ID de token (jti)
+        /// </summary>
+        /// <param name="tokenId">ID del token (jti)</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Sesión encontrada o null</returns>
+        Task<UserSession> GetByTokenIdAsync(string tokenId, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Revoca todas las sesiones de un usuario
         /// </summary>
         /// <param name="userId">ID del usuario</param>

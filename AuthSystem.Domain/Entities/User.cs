@@ -95,6 +95,31 @@ namespace AuthSystem.Domain.Entities
         public string LdapDN { get; set; }
 
         /// <summary>
+        /// Token para restablecimiento de contraseña
+        /// </summary>
+        public string PasswordResetToken { get; set; }
+
+        /// <summary>
+        /// Fecha de expiración del token de restablecimiento de contraseña
+        /// </summary>
+        public DateTime? PasswordResetTokenExpiry { get; set; }
+
+        /// <summary>
+        /// Token para activación de cuenta
+        /// </summary>
+        public string ActivationToken { get; set; }
+
+        /// <summary>
+        /// Fecha de expiración del token de activación
+        /// </summary>
+        public DateTime? ActivationTokenExpiry { get; set; }
+
+        /// <summary>
+        /// Fecha en que se activó la cuenta
+        /// </summary>
+        public DateTime? ActivatedAt { get; set; }
+
+        /// <summary>
         /// Relación con las sesiones activas del usuario
         /// </summary>
         public virtual ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();

@@ -1,10 +1,57 @@
 using System.Reflection;
+using System.Text;
+using AspNetCoreRateLimit;
+using AuthSystem.API.Extensions;
+using AuthSystem.Domain.Interfaces;
+using AuthSystem.Domain.Interfaces.Services;
+using AuthSystem.Infrastructure.Persistence;
+using AuthSystem.Infrastructure.Persistence.Repositories;
+using AuthSystem.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configurar servicios de rate limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("RateLimiting"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+builder.Services.AddInMemoryRateLimiting();
+
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Registrar servicios usando las extensiones
+builder.Services.AddPersistence(builder.Configuration);
+builder.Services.AddRepositories();
+builder.Services.AddApplicationServices();
+
+// Configurar autenticación JWT
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"])),
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -19,6 +66,31 @@ builder.Services.AddSwaggerGen(c =>
         {
             Name = "Equipo de Desarrollo",
             Email = "desarrollo@mintrabajo.gov.co"
+        }
+    });
+
+    // Configurar Swagger para usar JWT
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
         }
     });
 
@@ -40,13 +112,23 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "AuthSystem API v1");
-        // Cambiamos la configuración para que Swagger esté disponible en /swagger
         c.RoutePrefix = "swagger";
     });
 }
 
+// Configurar middleware de rate limiting
+app.UseIpRateLimiting();
+
+// Agregar middleware de seguridad
+app.UseSecurityHeaders();
+
+// Agregar middleware de auditoría
+app.UseAuditMiddleware();
+
 app.UseHttpsRedirection();
 
+// Agregar middleware de autenticación y autorización
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

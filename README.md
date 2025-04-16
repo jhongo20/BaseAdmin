@@ -31,17 +31,28 @@ El proyecto sigue una arquitectura limpia (Clean Architecture) con las siguiente
 - Soporte para usuarios internos (LDAP/Active Directory) y externos (credenciales locales)
 - Autenticación con JWT y validación robusta (firma, emisor, audiencia, expiración)
 - Lista de revocación de tokens para gestionar tokens comprometidos
-- Protección contra ataques de fuerza bruta y DDoS
+- Protección contra ataques de fuerza bruta y DDoS mediante rate limiting
 - Hashing seguro de contraseñas con BCrypt
 - Middleware para auditoría de acciones sensibles e intentos de inicio de sesión fallidos
 - Cabeceras CSP para mitigar ataques XSS
 - Validación extendida de JWT
+- Tokens de propósito específico para activación de cuentas y restablecimiento de contraseñas
+- Alertas de seguridad por correo electrónico para acciones sensibles
+- Plantillas HTML personalizadas para correos electrónicos de seguridad
+- Registro detallado de auditoría con información de dispositivo, IP y acción realizada
+- Políticas de contraseñas seguras (longitud mínima, caracteres especiales, mayúsculas, números)
+- Expiración de tokens de seguridad (restablecimiento de contraseña, activación de cuenta)
 
 ### Gestión de Usuarios, Roles y Permisos
 - Modelo multitenancy que soporta estructuras organizacionales
-- Activación de cuentas mediante token o código de verificación enviado por correo
+- Activación de cuentas mediante token enviado por correo
 - Recuperación de contraseña mediante token seguro
 - Gestión de sesiones distribuidas con capacidad de cierre de sesión forzado
+- Cambio de contraseña con validación de seguridad
+- Reenvío de correos de activación
+- Notificaciones de seguridad para cambios de contraseña
+- Validación de datos de entrada para prevenir inyecciones
+- Bloqueo temporal de cuentas después de múltiples intentos fallidos
 
 ### Estructura Organizacional
 - Separación modular (gestión de usuarios, roles, permisos, módulos)

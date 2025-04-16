@@ -23,6 +23,11 @@ namespace AuthSystem.Domain.Entities
         public string Token { get; set; }
 
         /// <summary>
+        /// Identificador único del token JWT (jti claim)
+        /// </summary>
+        public string TokenId { get; set; }
+
+        /// <summary>
         /// Token de actualización (refresh token)
         /// </summary>
         public string RefreshToken { get; set; }

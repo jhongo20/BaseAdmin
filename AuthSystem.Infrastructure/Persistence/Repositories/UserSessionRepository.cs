@@ -88,6 +88,24 @@ namespace AuthSystem.Infrastructure.Persistence.Repositories
         }
 
         /// <summary>
+        /// Obtiene una sesión por su ID de token (jti)
+        /// </summary>
+        /// <param name="tokenId">ID del token (jti)</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Sesión encontrada o null</returns>
+        public async Task<UserSession> GetByTokenIdAsync(string tokenId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(tokenId))
+            {
+                throw new ArgumentException("El ID del token no puede ser nulo o vacío", nameof(tokenId));
+            }
+
+            return await _dbSet
+                .Include(us => us.User)
+                .FirstOrDefaultAsync(us => us.TokenId == tokenId && us.IsActive, cancellationToken);
+        }
+
+        /// <summary>
         /// Revoca todas las sesiones de un usuario
         /// </summary>
         /// <param name="userId">ID del usuario</param>
