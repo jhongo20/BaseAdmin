@@ -179,6 +179,28 @@ namespace AuthSystem.Infrastructure.Persistence.Repositories
         }
 
         /// <summary>
+        /// Cuenta el número de sesiones que cumplen con un predicado
+        /// </summary>
+        /// <param name="predicate">Predicado para filtrar las sesiones</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Número de sesiones que cumplen con el predicado</returns>
+        public async Task<int> CountAsync(Func<UserSession, bool> predicate, CancellationToken cancellationToken = default)
+        {
+            return await Task.FromResult(_dbSet.Where(predicate).Count());
+        }
+        
+        /// <summary>
+        /// Obtiene todas las sesiones que cumplen con un predicado
+        /// </summary>
+        /// <param name="predicate">Predicado para filtrar las sesiones</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Lista de sesiones que cumplen con el predicado</returns>
+        public async Task<IReadOnlyList<UserSession>> GetAllAsync(Func<UserSession, bool> predicate, CancellationToken cancellationToken = default)
+        {
+            return await Task.FromResult(_dbSet.Where(predicate).ToList());
+        }
+
+        /// <summary>
         /// Obtiene una sesión por ID con todas sus relaciones
         /// </summary>
         /// <param name="id">ID de la sesión</param>

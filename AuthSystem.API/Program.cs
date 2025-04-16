@@ -2,12 +2,16 @@ using System.Reflection;
 using System.Text;
 using AspNetCoreRateLimit;
 using AuthSystem.API.Extensions;
+using AuthSystem.API.Middleware;
 using AuthSystem.Domain.Interfaces;
 using AuthSystem.Domain.Interfaces.Services;
 using AuthSystem.Infrastructure.Persistence;
 using AuthSystem.Infrastructure.Persistence.Repositories;
 using AuthSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -28,10 +32,29 @@ builder.Services.AddInMemoryRateLimiting();
 // Add services to the container.
 builder.Services.AddControllers();
 
+// Configurar API versionada
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+});
+
+builder.Services.AddVersionedApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
 // Registrar servicios usando las extensiones
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddApplicationServices();
+
+// Registrar servicios de la aplicación
+builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
+builder.Services.AddScoped<ISessionManagementService, SessionManagementService>();
 
 // Configurar autenticación JWT
 builder.Services.AddAuthentication(options =>
@@ -57,22 +80,33 @@ builder.Services.AddAuthentication(options =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "AuthSystem API",
-        Version = "v1",
-        Description = "API para el sistema de autenticación y autorización",
-        Contact = new OpenApiContact
-        {
-            Name = "Equipo de Desarrollo",
-            Email = "desarrollo@mintrabajo.gov.co"
-        }
-    });
 
-    // Configurar Swagger para usar JWT
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+// Configurar Swagger para API versionada
+builder.Services.AddSwaggerGen(options =>
+{
+    // Obtener todas las versiones de API disponibles
+    var provider = builder.Services.BuildServiceProvider().GetRequiredService<Microsoft.AspNetCore.Mvc.ApiExplorer.IApiVersionDescriptionProvider>();
+    
+    // Crear un documento Swagger para cada versión
+    foreach (var description in provider.ApiVersionDescriptions)
+    {
+        options.SwaggerDoc(
+            description.GroupName,
+            new OpenApiInfo
+            {
+                Title = $"Auth System API {description.GroupName}",
+                Version = description.ApiVersion.ToString(),
+                Description = description.IsDeprecated ? "Esta versión de la API está obsoleta." : "API de autenticación y autorización.",
+                Contact = new OpenApiContact
+                {
+                    Name = "Equipo de Desarrollo",
+                    Email = "dev@example.com"
+                }
+            });
+    }
+    
+    // Configuración de seguridad para Swagger
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
@@ -81,7 +115,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer"
     });
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -92,17 +126,9 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
-
-    // Incluir comentarios XML para la documentación de la API
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        c.IncludeXmlComments(xmlPath);
-    }
 });
 
 var app = builder.Build();
@@ -111,10 +137,13 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    app.UseSwaggerUI(options =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AuthSystem API v1");
-        c.RoutePrefix = "swagger";
+        var provider = app.Services.GetService<Microsoft.AspNetCore.Mvc.ApiExplorer.IApiVersionDescriptionProvider>();
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+        }
     });
 }
 
@@ -132,6 +161,7 @@ app.UseAuditMiddleware();
 app.UseHttpsRedirection();
 app.UseSecurityHeaders();
 app.UseTokenRevocation();
+app.UseSessionValidation();
 app.UseAuthentication();
 app.UseAuthorization();
 

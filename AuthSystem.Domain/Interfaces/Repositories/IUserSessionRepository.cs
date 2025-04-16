@@ -83,5 +83,21 @@ namespace AuthSystem.Domain.Interfaces.Repositories
         /// <param name="cancellationToken">Token de cancelación</param>
         /// <returns>True si el token está revocado</returns>
         Task<bool> IsTokenRevokedAsync(string token, CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Cuenta el número de sesiones que cumplen con un predicado
+        /// </summary>
+        /// <param name="predicate">Predicado para filtrar las sesiones</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Número de sesiones que cumplen con el predicado</returns>
+        Task<int> CountAsync(Func<UserSession, bool> predicate, CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Obtiene todas las sesiones que cumplen con un predicado
+        /// </summary>
+        /// <param name="predicate">Predicado para filtrar las sesiones</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Lista de sesiones que cumplen con el predicado</returns>
+        Task<IReadOnlyList<UserSession>> GetAllAsync(Func<UserSession, bool> predicate, CancellationToken cancellationToken = default);
     }
 }

@@ -44,9 +44,13 @@ El sistema está construido siguiendo una arquitectura limpia (Clean Architectur
 
 El sistema implementa una estrategia de versionado de API basada en la URL, permitiendo mantener múltiples versiones simultáneamente sin romper la compatibilidad con clientes existentes. Para más detalles, consulte la [documentación de API versionada](VersionedAPI.md).
 
-### Gestión de Sesiones
+### Gestión de Sesiones Distribuidas
 
 El sistema utiliza un enfoque de sesiones distribuidas que permite gestionar las sesiones de usuario de manera centralizada y escalable, facilitando el cierre forzado de sesiones, la limitación de sesiones concurrentes y el monitoreo en tiempo real. Para más detalles, consulte la [documentación de sesiones distribuidas](DistributedSessions.md).
+
+### Revocación de Tokens JWT
+
+El sistema implementa un mecanismo robusto para la revocación de tokens JWT antes de su expiración natural, permitiendo invalidar sesiones en escenarios como cambios de contraseña, detección de actividad sospechosa o cierre de sesión manual. Para más detalles, consulte la [documentación de revocación de tokens](TokenRevocation.md).
 
 ## Entidades principales
 
@@ -59,7 +63,8 @@ El sistema gestiona las siguientes entidades principales:
 - **Organization**: Organizaciones que agrupan usuarios
 - **Branch**: Sucursales pertenecientes a organizaciones
 - **AuditLog**: Registro de acciones realizadas en el sistema
-- **UserSession**: Sesiones de usuario y tokens de refresco
+- **UserSession**: Sesiones de usuario activas y su información
+- **RevokedToken**: Tokens JWT que han sido revocados manualmente
 
 ## Características principales
 
@@ -105,6 +110,9 @@ El sistema gestiona las siguientes entidades principales:
 - Rate limiting (limitación de solicitudes)
 - Headers de seguridad HTTP
 - Validación de entradas
+- Revocación de tokens JWT
+- Gestión centralizada de sesiones
+- Límite configurable de sesiones concurrentes
 
 ## Base de datos
 
@@ -117,7 +125,7 @@ El sistema utiliza Entity Framework Core como ORM (Object-Relational Mapper) con
    - UserRoles, RolePermissions, UserBranches
    
 3. **Tablas de sistema**:
-   - AuditLogs, UserSessions
+   - AuditLogs, UserSessions, RevokedTokens
 
 ## Rate Limiting
 
@@ -131,6 +139,22 @@ La API REST proporciona endpoints para todas las funcionalidades del sistema:
 - POST /api/auth/login
 - POST /api/auth/refresh-token
 - POST /api/auth/logout
+
+### Revocación de Tokens
+- POST /api/token-revocation/current
+- POST /api/token-revocation/all
+- POST /api/token-revocation/user/{userId}
+- DELETE /api/token-revocation/cleanup
+
+### Gestión de Sesiones
+- GET /api/sessions/my
+- DELETE /api/sessions/my/{sessionId}
+- DELETE /api/sessions/my
+- GET /api/sessions
+- DELETE /api/sessions/{sessionId}
+- DELETE /api/sessions/user/{userId}
+- GET /api/sessions/stats
+- POST /api/sessions/cleanup
 
 ### Usuarios
 - GET /api/users
@@ -195,6 +219,7 @@ La configuración del sistema se encuentra en el archivo `appsettings.json` y se
 5. **Redis**: Configuración de caché Redis (opcional)
 6. **EmailSettings**: Configuración del servidor SMTP
 7. **Serilog**: Configuración de logging
+8. **SessionManagement**: Configuración del sistema de sesiones distribuidas
 
 ## Seguridad
 
