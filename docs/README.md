@@ -40,6 +40,9 @@ El proyecto sigue una arquitectura en capas:
 
 Para más información sobre el proyecto, consulte los siguientes documentos:
 
+- [Documentación del Sistema](./SystemDocumentation.md): Descripción completa del sistema y sus funcionalidades
+- [Rate Limiting](./RateLimit.md): Configuración detallada del sistema de limitación de solicitudes
+- [API](./API.md): Documentación de los endpoints de la API
 - [Arquitectura](./Arquitectura.md): Descripción detallada de la arquitectura del sistema
 - [Estructura del Proyecto](./Estructura_Proyecto.md): Organización de carpetas y archivos
 - [Guía de Desarrollo](./Guia_Desarrollo.md): Convenciones y flujos de trabajo para desarrolladores

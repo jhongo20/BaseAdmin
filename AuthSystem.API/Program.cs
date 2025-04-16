@@ -17,7 +17,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Configurar servicios de rate limiting
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("RateLimiting"));
+builder.Services.Configure<ClientRateLimitOptions>(builder.Configuration.GetSection("RateLimiting"));
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IClientPolicyStore, MemoryCacheClientPolicyStore>();
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
@@ -118,6 +120,8 @@ if (app.Environment.IsDevelopment())
 
 // Configurar middleware de rate limiting
 app.UseIpRateLimiting();
+app.UseClientRateLimiting();
+app.UseRateLimitingLogger();
 
 // Agregar middleware de seguridad
 app.UseSecurityHeaders();
@@ -132,5 +136,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Aplicar migraciones automáticamente al iniciar la aplicación
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.Run();
