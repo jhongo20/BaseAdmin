@@ -31,6 +31,23 @@ El sistema sigue una arquitectura de capas basada en Clean Architecture:
    - Configuración de la aplicación
    - Documentación Swagger
 
+## Arquitectura del Sistema
+
+El sistema está construido siguiendo una arquitectura limpia (Clean Architecture) con separación clara de responsabilidades:
+
+- **Capa de Presentación**: API REST con controladores y middleware.
+- **Capa de Aplicación**: Servicios de aplicación y lógica de negocio.
+- **Capa de Dominio**: Entidades, interfaces y reglas de negocio.
+- **Capa de Infraestructura**: Implementaciones concretas de repositorios, servicios externos, etc.
+
+### API Versionada
+
+El sistema implementa una estrategia de versionado de API basada en la URL, permitiendo mantener múltiples versiones simultáneamente sin romper la compatibilidad con clientes existentes. Para más detalles, consulte la [documentación de API versionada](VersionedAPI.md).
+
+### Gestión de Sesiones
+
+El sistema utiliza un enfoque de sesiones distribuidas que permite gestionar las sesiones de usuario de manera centralizada y escalable, facilitando el cierre forzado de sesiones, la limitación de sesiones concurrentes y el monitoreo en tiempo real. Para más detalles, consulte la [documentación de sesiones distribuidas](DistributedSessions.md).
+
 ## Entidades principales
 
 El sistema gestiona las siguientes entidades principales:
