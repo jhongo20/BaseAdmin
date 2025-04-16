@@ -48,7 +48,7 @@ namespace AuthSystem.API.Extensions
             services.AddScoped<IAccountLockoutService, AccountLockoutService>();
             services.AddScoped<ICaptchaService, CaptchaService>();
             services.AddScoped<ITwoFactorAuthService, TwoFactorAuthService>();
-            services.AddSingleton<ISecurityMonitoringService, SecurityMonitoringService>();
+            services.AddScoped<ISecurityMonitoringService, SecurityMonitoringService>();
             
             return services;
         }

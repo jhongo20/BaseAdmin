@@ -268,25 +268,6 @@ namespace AuthSystem.Infrastructure.Persistence.Repositories
         }
 
         /// <summary>
-        /// Obtiene roles asignados a un usuario en una organización específica
-        /// </summary>
-        /// <param name="userId">ID del usuario</param>
-        /// <param name="organizationId">ID de la organización</param>
-        /// <param name="cancellationToken">Token de cancelación</param>
-        /// <returns>Lista de roles asignados al usuario en la organización</returns>
-        public async Task<IReadOnlyList<Role>> GetByUserAndOrganizationAsync(Guid userId, Guid organizationId, CancellationToken cancellationToken = default)
-        {
-            return await _dbSet
-                .Include(r => r.UserRoles)
-                .Include(r => r.RolePermissions)
-                    .ThenInclude(rp => rp.Permission)
-                .Where(r => r.OrganizationId == organizationId && 
-                            r.UserRoles.Any(ur => ur.UserId == userId && ur.IsActive) &&
-                            r.IsActive)
-                .ToListAsync(cancellationToken);
-        }
-
-        /// <summary>
         /// Obtiene roles que tienen asignado un permiso específico
         /// </summary>
         /// <param name="permissionId">ID del permiso</param>

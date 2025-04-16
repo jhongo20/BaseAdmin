@@ -106,7 +106,7 @@ namespace AuthSystem.API.Controllers
                                 PhoneNumber = user.PhoneNumber,
                                 CreatedAt = user.CreatedAt,
                                 LastModifiedAt = user.LastModifiedAt,
-                                FailedLoginAttempts = user.FailedLoginAttempts,
+                                FailedLoginAttempts = user.AccessFailedCount,
                                 IsLocked = user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow,
                                 LockoutEnd = user.LockoutEnd,
                                 TwoFactorEnabled = user.TwoFactorEnabled
