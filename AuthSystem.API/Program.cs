@@ -68,6 +68,9 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddCacheServices(builder.Configuration);
 
+    // Configuración de servicios de cola de mensajes
+    builder.Services.AddMessageQueueServices(builder.Configuration);
+
     // Registrar servicios de la aplicación
     builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
     builder.Services.AddScoped<ISessionManagementService, SessionManagementService>();
