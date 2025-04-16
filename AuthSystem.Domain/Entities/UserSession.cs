@@ -48,6 +48,21 @@ namespace AuthSystem.Domain.Entities
         public string UserAgent { get; set; }
 
         /// <summary>
+        /// Token de acceso (JWT completo)
+        /// </summary>
+        public string AccessToken { get; set; }
+
+        /// <summary>
+        /// Fecha y hora de finalización de la sesión
+        /// </summary>
+        public DateTime? EndedAt { get; set; }
+
+        /// <summary>
+        /// Motivo de finalización de la sesión
+        /// </summary>
+        public string EndReason { get; set; }
+
+        /// <summary>
         /// Fecha y hora del último acceso
         /// </summary>
         public DateTime LastActivity { get; set; }

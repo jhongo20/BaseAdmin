@@ -52,6 +52,14 @@ namespace AuthSystem.Domain.Interfaces.Repositories
         Task<UserSession> GetByTokenIdAsync(string tokenId, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Obtiene sesiones activas por usuario
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Lista de sesiones activas del usuario</returns>
+        Task<IReadOnlyList<UserSession>> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Revoca todas las sesiones de un usuario
         /// </summary>
         /// <param name="userId">ID del usuario</param>

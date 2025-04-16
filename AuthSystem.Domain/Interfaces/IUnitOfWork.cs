@@ -66,6 +66,11 @@ namespace AuthSystem.Domain.Interfaces
         IAuditLogRepository AuditLogs { get; }
 
         /// <summary>
+        /// Repositorio de tokens revocados
+        /// </summary>
+        IRevokedTokenRepository RevokedTokens { get; }
+
+        /// <summary>
         /// Guarda todos los cambios realizados en el contexto
         /// </summary>
         /// <param name="cancellationToken">Token de cancelación</param>

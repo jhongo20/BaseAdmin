@@ -130,8 +130,8 @@ app.UseSecurityHeaders();
 app.UseAuditMiddleware();
 
 app.UseHttpsRedirection();
-
-// Agregar middleware de autenticación y autorización
+app.UseSecurityHeaders();
+app.UseTokenRevocation();
 app.UseAuthentication();
 app.UseAuthorization();
 

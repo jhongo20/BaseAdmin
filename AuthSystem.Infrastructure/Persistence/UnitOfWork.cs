@@ -29,7 +29,11 @@ namespace AuthSystem.Infrastructure.Persistence
         private IUserBranchRepository _userBranchRepository;
         private IRolePermissionRepository _rolePermissionRepository;
         private IUserSessionRepository _userSessionRepository;
-        private IAuditLogRepository _auditLogRepository;
+        private IAuditLogRepository _auditLogs;
+        private IUserLoginAttemptRepository _userLoginAttempts;
+        private IPasswordResetTokenRepository _passwordResetTokens;
+        private IEmailVerificationTokenRepository _emailVerificationTokens;
+        private IRevokedTokenRepository _revokedTokens;
 
         /// <summary>
         /// Constructor
@@ -93,7 +97,27 @@ namespace AuthSystem.Infrastructure.Persistence
         /// <summary>
         /// Repositorio de logs de auditoría
         /// </summary>
-        public IAuditLogRepository AuditLogs => _auditLogRepository ??= new AuditLogRepository(_context);
+        public IAuditLogRepository AuditLogs => _auditLogs ??= new AuditLogRepository(_context);
+
+        /// <summary>
+        /// Repositorio de intentos de inicio de sesión
+        /// </summary>
+        public IUserLoginAttemptRepository UserLoginAttempts => _userLoginAttempts ??= new UserLoginAttemptRepository(_context);
+
+        /// <summary>
+        /// Repositorio de tokens de restablecimiento de contraseña
+        /// </summary>
+        public IPasswordResetTokenRepository PasswordResetTokens => _passwordResetTokens ??= new PasswordResetTokenRepository(_context);
+
+        /// <summary>
+        /// Repositorio de tokens de verificación de correo electrónico
+        /// </summary>
+        public IEmailVerificationTokenRepository EmailVerificationTokens => _emailVerificationTokens ??= new EmailVerificationTokenRepository(_context);
+
+        /// <summary>
+        /// Repositorio de tokens revocados
+        /// </summary>
+        public IRevokedTokenRepository RevokedTokens => _revokedTokens ??= new RevokedTokenRepository(_context);
 
         /// <summary>
         /// Guarda todos los cambios realizados en el contexto

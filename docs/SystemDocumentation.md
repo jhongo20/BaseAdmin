@@ -181,12 +181,15 @@ La configuración del sistema se encuentra en el archivo `appsettings.json` y se
 
 ## Seguridad
 
-### Protección de contraseñas
+### Autenticación
 
-Las contraseñas se almacenan utilizando el algoritmo BCrypt, que incluye:
-- Salting automático
-- Función de derivación de clave
-- Protección contra ataques de fuerza bruta
+El sistema utiliza JWT (JSON Web Tokens) para la autenticación de usuarios. Los tokens son firmados con una clave secreta y tienen un tiempo de expiración configurable.
+
+### Revocación de Tokens
+
+El sistema incluye un mecanismo de revocación de tokens que permite invalidar tokens JWT antes de su fecha de expiración natural. Esto es útil en escenarios como cierre de sesión, cambio de contraseña, detección de actividad sospechosa, revocación de permisos o bloqueo de cuenta.
+
+Los tokens revocados se almacenan en la base de datos y son verificados en cada solicitud mediante un middleware especializado. Para más detalles, consulte la [documentación de revocación de tokens](TokenRevocation.md).
 
 ### Protección contra ataques
 

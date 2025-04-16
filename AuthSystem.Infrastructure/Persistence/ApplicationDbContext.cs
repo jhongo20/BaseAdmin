@@ -74,9 +74,29 @@ namespace AuthSystem.Infrastructure.Persistence
         public DbSet<UserSession> UserSessions { get; set; }
 
         /// <summary>
+        /// Intentos de inicio de sesión
+        /// </summary>
+        public DbSet<UserLoginAttempt> UserLoginAttempts { get; set; }
+
+        /// <summary>
+        /// Tokens de restablecimiento de contraseña
+        /// </summary>
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
+        /// <summary>
+        /// Tokens de verificación de correo electrónico
+        /// </summary>
+        public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
+
+        /// <summary>
         /// Logs de auditoría
         /// </summary>
         public DbSet<AuditLog> AuditLogs { get; set; }
+
+        /// <summary>
+        /// Tokens revocados
+        /// </summary>
+        public DbSet<RevokedToken> RevokedTokens { get; set; }
 
         /// <summary>
         /// Configuración del modelo

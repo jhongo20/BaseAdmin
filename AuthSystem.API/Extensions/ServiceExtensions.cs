@@ -49,6 +49,7 @@ namespace AuthSystem.API.Extensions
             services.AddScoped<ICaptchaService, CaptchaService>();
             services.AddScoped<ITwoFactorAuthService, TwoFactorAuthService>();
             services.AddScoped<ISecurityMonitoringService, SecurityMonitoringService>();
+            services.AddScoped<ITokenRevocationService, TokenRevocationService>();
             
             return services;
         }

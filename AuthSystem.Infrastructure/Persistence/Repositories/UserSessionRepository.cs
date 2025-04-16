@@ -101,8 +101,22 @@ namespace AuthSystem.Infrastructure.Persistence.Repositories
             }
 
             return await _dbSet
-                .Include(us => us.User)
-                .FirstOrDefaultAsync(us => us.TokenId == tokenId && us.IsActive, cancellationToken);
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.TokenId == tokenId && s.IsActive, cancellationToken);
+        }
+
+        /// <summary>
+        /// Obtiene sesiones activas por usuario
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Lista de sesiones activas del usuario</returns>
+        public async Task<IReadOnlyList<UserSession>> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            return await _dbSet
+                .Where(s => s.UserId == userId && s.IsActive && s.EndedAt == null)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync(cancellationToken);
         }
 
         /// <summary>
