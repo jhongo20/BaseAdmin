@@ -47,6 +47,27 @@ try
     // Add services to the container.
     builder.Services.AddControllers();
 
+    // Configurar compresión de respuestas HTTP
+    builder.Services.AddResponseCompression(options =>
+    {
+        options.EnableForHttps = true; // Habilitar compresión también para HTTPS
+        options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+        options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+        options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(
+            new[] { "application/json", "application/xml", "text/plain", "text/css", "application/javascript", "text/html" });
+    });
+
+    // Configurar proveedores de compresión
+    builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+    {
+        options.Level = System.IO.Compression.CompressionLevel.Optimal;
+    });
+
+    builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+    {
+        options.Level = System.IO.Compression.CompressionLevel.Optimal;
+    });
+
     // Configurar API versionada
     builder.Services.AddApiVersioning(options =>
     {
@@ -155,6 +176,9 @@ try
     builder.Host.UseSerilog();
 
     var app = builder.Build();
+
+    // Usar compresión de respuestas HTTP
+    app.UseResponseCompression();
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
