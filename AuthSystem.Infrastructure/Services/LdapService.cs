@@ -9,8 +9,10 @@ using AuthSystem.Domain.Entities;
 using AuthSystem.Domain.Interfaces;
 using AuthSystem.Domain.Interfaces.Repositories;
 using AuthSystem.Domain.Interfaces.Services;
+using AuthSystem.Domain.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AuthSystem.Infrastructure.Services
 {
@@ -23,6 +25,8 @@ namespace AuthSystem.Infrastructure.Services
         private readonly IRoleRepository _roleRepository;
         private readonly IUserRoleRepository _userRoleRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICacheService _cacheService;
+        private readonly CacheSettings _cacheSettings;
 
         public LdapService(
             IConfiguration configuration,
@@ -31,7 +35,9 @@ namespace AuthSystem.Infrastructure.Services
             IUserRepository userRepository,
             IRoleRepository roleRepository,
             IUserRoleRepository userRoleRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            ICacheService cacheService,
+            IOptions<CacheSettings> cacheSettings)
         {
             _configuration = configuration;
             _organizationRepository = organizationRepository;
@@ -40,6 +46,8 @@ namespace AuthSystem.Infrastructure.Services
             _roleRepository = roleRepository;
             _userRoleRepository = userRoleRepository;
             _unitOfWork = unitOfWork;
+            _cacheService = cacheService;
+            _cacheSettings = cacheSettings.Value;
         }
 
         public async Task<bool> AuthenticateAsync(
@@ -87,6 +95,15 @@ namespace AuthSystem.Infrastructure.Services
         {
             try
             {
+                // Intentar obtener de la caché primero
+                string cacheKey = $"ldap:userinfo:{organizationId}:{username}";
+                var cachedUserInfo = await _cacheService.GetAsync<LdapUserInfo>(cacheKey, cancellationToken);
+                if (cachedUserInfo != null)
+                {
+                    _logger.LogDebug("LDAP user info retrieved from cache for {Username}", username);
+                    return cachedUserInfo;
+                }
+
                 var ldapConfig = await GetLdapConfigAsync(organizationId, cancellationToken);
                 if (ldapConfig == null)
                 {
@@ -128,6 +145,11 @@ namespace AuthSystem.Infrastructure.Services
                     DistinguishedName = GetAttributeValue(entry, "distinguishedName"),
                     Groups = GetAttributeValues(entry, "memberOf")
                 };
+
+                // Guardar en caché
+                TimeSpan cacheExpiration = TimeSpan.FromMinutes(_cacheSettings.LdapCacheAbsoluteExpirationMinutes);
+                await _cacheService.SetAsync(cacheKey, userInfo, cacheExpiration, null, cancellationToken);
+                _logger.LogDebug("LDAP user info stored in cache for {Username}", username);
 
                 return userInfo;
             }
@@ -471,11 +493,20 @@ namespace AuthSystem.Infrastructure.Services
 
         private async Task<LdapConfig> GetLdapConfigAsync(Guid organizationId, CancellationToken cancellationToken)
         {
+            // Intentar obtener de la caché primero
+            string cacheKey = $"ldap:config:{organizationId}";
+            var cachedConfig = await _cacheService.GetAsync<LdapConfig>(cacheKey, cancellationToken);
+            if (cachedConfig != null)
+            {
+                _logger.LogDebug("LDAP configuration retrieved from cache for organization {OrganizationId}", organizationId);
+                return cachedConfig;
+            }
+
             // En un escenario real, obtendríamos la configuración LDAP específica de la organización
             // desde la base de datos o un servicio de configuración
             
             // Para simplificar, usamos la configuración global
-            return new LdapConfig
+            var config = new LdapConfig
             {
                 Server = _configuration["LdapSettings:Server"],
                 Port = int.Parse(_configuration["LdapSettings:Port"]),
@@ -485,6 +516,13 @@ namespace AuthSystem.Infrastructure.Services
                 SearchFilter = _configuration["LdapSettings:SearchFilter"],
                 UserDnFormat = "uid={0}," + _configuration["LdapSettings:SearchBase"]
             };
+
+            // Guardar en caché
+            TimeSpan cacheExpiration = TimeSpan.FromMinutes(_cacheSettings.ConfigurationCacheAbsoluteExpirationMinutes);
+            await _cacheService.SetAsync(cacheKey, config, cacheExpiration, null, cancellationToken);
+            _logger.LogDebug("LDAP configuration stored in cache for organization {OrganizationId}", organizationId);
+
+            return config;
         }
 
         private string GetAttributeValue(SearchResultEntry entry, string attributeName)

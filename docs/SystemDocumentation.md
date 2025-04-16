@@ -60,6 +60,10 @@ El sistema incluye un mecanismo de Feature Flags (banderas de características) 
 
 El sistema implementa un sistema de logging estructurado con Serilog que permite registrar eventos y errores de manera eficiente y organizada. Los logs se almacenan en formato JSON y texto plano, se rotan diariamente y se enriquecen con información contextual como el usuario, la solicitud HTTP y el entorno. Para más detalles, consulte la [documentación de Logging](Logging.md).
 
+### Sistema de Caché
+
+El sistema implementa un mecanismo de caché que permite almacenar resultados de consultas frecuentes, reduciendo la carga en servicios externos y bases de datos, y mejorando significativamente el rendimiento de la aplicación. Soporta múltiples proveedores (Redis y memoria) y está especialmente optimizado para almacenar resultados de consultas LDAP y configuración. Para más detalles, consulte la [documentación de Caché](Caching.md).
+
 ## Entidades principales
 
 El sistema gestiona las siguientes entidades principales:
@@ -231,10 +235,11 @@ La configuración del sistema se encuentra en el archivo `appsettings.json` y se
 3. **LdapSettings**: Configuración de conexión LDAP
 4. **RateLimiting**: Configuración de limitación de solicitudes
 5. **Redis**: Configuración de caché Redis (opcional)
-6. **EmailSettings**: Configuración del servidor SMTP
-7. **Serilog**: Configuración de logging estructurado
-8. **SessionManagement**: Configuración del sistema de sesiones distribuidas
-9. **FeatureFlags**: Configuración de banderas de características
+6. **CacheSettings**: Configuración del sistema de caché
+7. **EmailSettings**: Configuración del servidor SMTP
+8. **Serilog**: Configuración de logging estructurado
+9. **SessionManagement**: Configuración del sistema de sesiones distribuidas
+10. **FeatureFlags**: Configuración de banderas de características
 
 ## Seguridad
 

@@ -66,6 +66,7 @@ try
     builder.Services.AddPersistence(builder.Configuration);
     builder.Services.AddRepositories();
     builder.Services.AddApplicationServices();
+    builder.Services.AddCacheServices(builder.Configuration);
 
     // Registrar servicios de la aplicación
     builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
