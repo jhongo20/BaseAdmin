@@ -59,5 +59,13 @@ namespace AuthSystem.Domain.Interfaces.Repositories
         /// <param name="cancellationToken">Token de cancelación</param>
         /// <returns>Lista de roles asignados al usuario en la organización</returns>
         Task<IReadOnlyList<Role>> GetByUserAndOrganizationAsync(Guid userId, Guid organizationId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Obtiene roles que tienen asignado un permiso específico
+        /// </summary>
+        /// <param name="permissionId">ID del permiso</param>
+        /// <param name="cancellationToken">Token de cancelación</param>
+        /// <returns>Lista de roles que tienen el permiso</returns>
+        Task<IReadOnlyList<Role>> GetByPermissionAsync(Guid permissionId, CancellationToken cancellationToken = default);
     }
 }
