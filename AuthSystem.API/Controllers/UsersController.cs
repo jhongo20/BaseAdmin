@@ -191,6 +191,70 @@ namespace AuthSystem.API.Controllers
             }
         }
 
-        // Métodos POST, PUT y DELETE se implementarán en la siguiente fase
+        [HttpPost]
+        public async Task<ActionResult<User>> Create(User user)
+        {
+            try
+            {
+                var newUser = await _unitOfWork.Users.AddAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetById), new { id = newUser.Id }, newUser);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear usuario");
+                return StatusCode(500, "Error interno del servidor al crear usuario");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Update(Guid id, User user)
+        {
+            try
+            {
+                var existingUser = await _unitOfWork.Users.GetByIdAsync(id);
+                if (existingUser == null)
+                {
+                    return NotFound($"Usuario con ID {id} no encontrado");
+                }
+
+                existingUser.Username = user.Username;
+                existingUser.Email = user.Email;
+                existingUser.FullName = user.FullName;
+                existingUser.UserType = user.UserType;
+                existingUser.IsActive = user.IsActive;
+
+                await _unitOfWork.Users.UpdateAsync(existingUser);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar usuario con ID {UserId}", id);
+                return StatusCode(500, "Error interno del servidor al actualizar usuario");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            try
+            {
+                var existingUser = await _unitOfWork.Users.GetByIdAsync(id);
+                if (existingUser == null)
+                {
+                    return NotFound($"Usuario con ID {id} no encontrado");
+                }
+
+                await _unitOfWork.Users.DeleteAsync(existingUser);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar usuario con ID {UserId}", id);
+                return StatusCode(500, "Error interno del servidor al eliminar usuario");
+            }
+        }
     }
 }

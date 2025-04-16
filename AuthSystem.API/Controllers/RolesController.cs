@@ -176,6 +176,68 @@ namespace AuthSystem.API.Controllers
             }
         }
 
-        // Métodos POST, PUT y DELETE se implementarán en la siguiente fase
+        [HttpPost]
+        public async Task<ActionResult<Role>> CreateRole(Role role)
+        {
+            try
+            {
+                var newRole = await _unitOfWork.Roles.AddAsync(role);
+                await _unitOfWork.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetById), new { id = newRole.Id }, newRole);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear rol");
+                return StatusCode(500, "Error interno del servidor al crear rol");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateRole(Guid id, Role role)
+        {
+            try
+            {
+                var existingRole = await _unitOfWork.Roles.GetByIdAsync(id);
+                if (existingRole == null)
+                {
+                    return NotFound($"Rol con ID {id} no encontrado");
+                }
+
+                existingRole.Name = role.Name;
+                existingRole.Description = role.Description;
+                existingRole.IsActive = role.IsActive;
+
+                await _unitOfWork.Roles.UpdateAsync(existingRole);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar rol con ID {RoleId}", id);
+                return StatusCode(500, "Error interno del servidor al actualizar rol");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteRole(Guid id)
+        {
+            try
+            {
+                var existingRole = await _unitOfWork.Roles.GetByIdAsync(id);
+                if (existingRole == null)
+                {
+                    return NotFound($"Rol con ID {id} no encontrado");
+                }
+
+                await _unitOfWork.Roles.DeleteAsync(existingRole);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar rol con ID {RoleId}", id);
+                return StatusCode(500, "Error interno del servidor al eliminar rol");
+            }
+        }
     }
 }

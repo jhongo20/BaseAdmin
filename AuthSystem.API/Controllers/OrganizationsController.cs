@@ -216,6 +216,79 @@ namespace AuthSystem.API.Controllers
             }
         }
 
-        // Métodos POST, PUT y DELETE se implementarán en la siguiente fase
+        [HttpPost]
+        public async Task<ActionResult<Organization>> Create(Organization organization)
+        {
+            try
+            {
+                var newOrganization = await _unitOfWork.Organizations.AddAsync(organization);
+                await _unitOfWork.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetById), new { id = newOrganization.Id }, newOrganization);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear organización");
+                return StatusCode(500, "Error interno del servidor al crear organización");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Update(Guid id, Organization organization)
+        {
+            try
+            {
+                if (id != organization.Id)
+                {
+                    return BadRequest("El ID de la organización no coincide con el ID proporcionado");
+                }
+                
+                var existingOrganization = await _unitOfWork.Organizations.GetByIdAsync(id);
+                if (existingOrganization == null)
+                {
+                    return NotFound($"Organización con ID {id} no encontrada");
+                }
+                
+                // Actualizar propiedades
+                existingOrganization.Name = organization.Name;
+                existingOrganization.Description = organization.Description;
+                existingOrganization.TaxId = organization.TaxId;
+                existingOrganization.Address = organization.Address;
+                existingOrganization.Phone = organization.Phone;
+                existingOrganization.Email = organization.Email;
+                existingOrganization.Website = organization.Website;
+                existingOrganization.IsActive = organization.IsActive;
+                
+                await _unitOfWork.Organizations.UpdateAsync(existingOrganization);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar organización con ID {OrganizationId}", id);
+                return StatusCode(500, "Error interno del servidor al actualizar organización");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            try
+            {
+                var organization = await _unitOfWork.Organizations.GetByIdAsync(id);
+                if (organization == null)
+                {
+                    return NotFound($"Organización con ID {id} no encontrada");
+                }
+                
+                await _unitOfWork.Organizations.DeleteAsync(organization);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar organización con ID {OrganizationId}", id);
+                return StatusCode(500, "Error interno del servidor al eliminar organización");
+            }
+        }
     }
 }

@@ -197,6 +197,70 @@ namespace AuthSystem.API.Controllers
             }
         }
 
-        // Métodos POST, PUT y DELETE se implementarán en la siguiente fase
+        [HttpPost]
+        public async Task<ActionResult<Permission>> Create(Permission permission)
+        {
+            try
+            {
+                var newPermission = await _unitOfWork.Permissions.AddAsync(permission);
+                await _unitOfWork.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetById), new { id = newPermission.Id }, newPermission);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear permiso");
+                return StatusCode(500, "Error interno del servidor al crear permiso");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Update(Guid id, Permission permission)
+        {
+            try
+            {
+                var existingPermission = await _unitOfWork.Permissions.GetByIdAsync(id);
+                if (existingPermission == null)
+                {
+                    return NotFound($"Permiso con ID {id} no encontrado");
+                }
+                
+                existingPermission.Name = permission.Name;
+                existingPermission.Description = permission.Description;
+                existingPermission.Type = permission.Type;
+                existingPermission.IsActive = permission.IsActive;
+                existingPermission.ModuleId = permission.ModuleId;
+                
+                await _unitOfWork.Permissions.UpdateAsync(existingPermission);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar permiso con ID {PermissionId}", id);
+                return StatusCode(500, "Error interno del servidor al actualizar permiso");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            try
+            {
+                var permission = await _unitOfWork.Permissions.GetByIdAsync(id);
+                if (permission == null)
+                {
+                    return NotFound($"Permiso con ID {id} no encontrado");
+                }
+                
+                await _unitOfWork.Permissions.DeleteAsync(permission);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar permiso con ID {PermissionId}", id);
+                return StatusCode(500, "Error interno del servidor al eliminar permiso");
+            }
+        }
     }
 }

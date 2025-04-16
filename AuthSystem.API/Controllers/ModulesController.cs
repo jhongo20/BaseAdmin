@@ -182,6 +182,78 @@ namespace AuthSystem.API.Controllers
             }
         }
 
-        // Métodos POST, PUT y DELETE se implementarán en la siguiente fase
+        [HttpPost]
+        public async Task<ActionResult<Module>> CreateModule(Module module)
+        {
+            try
+            {
+                var newModule = await _unitOfWork.Modules.AddAsync(module);
+                await _unitOfWork.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetById), new { id = newModule.Id }, newModule);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear módulo");
+                return StatusCode(500, "Error interno del servidor al crear módulo");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateModule(Guid id, Module module)
+        {
+            try
+            {
+                if (id != module.Id)
+                {
+                    return BadRequest("El ID del módulo no coincide con el ID proporcionado");
+                }
+                
+                var existingModule = await _unitOfWork.Modules.GetByIdAsync(id);
+                if (existingModule == null)
+                {
+                    return NotFound($"Módulo con ID {id} no encontrado");
+                }
+                
+                // Actualizar propiedades
+                existingModule.Name = module.Name;
+                existingModule.Description = module.Description;
+                existingModule.Route = module.Route;
+                existingModule.Icon = module.Icon;
+                existingModule.DisplayOrder = module.DisplayOrder;
+                existingModule.ParentId = module.ParentId;
+                existingModule.IsEnabled = module.IsEnabled;
+                
+                await _unitOfWork.Modules.UpdateAsync(existingModule);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar módulo con ID {ModuleId}", id);
+                return StatusCode(500, "Error interno del servidor al actualizar módulo");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteModule(Guid id)
+        {
+            try
+            {
+                var module = await _unitOfWork.Modules.GetByIdAsync(id);
+                if (module == null)
+                {
+                    return NotFound($"Módulo con ID {id} no encontrado");
+                }
+                
+                await _unitOfWork.Modules.DeleteAsync(module);
+                await _unitOfWork.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar módulo con ID {ModuleId}", id);
+                return StatusCode(500, "Error interno del servidor al eliminar módulo");
+            }
+        }
     }
 }
