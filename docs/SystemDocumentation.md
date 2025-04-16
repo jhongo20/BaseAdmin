@@ -56,6 +56,10 @@ El sistema implementa un mecanismo robusto para la revocación de tokens JWT ant
 
 El sistema incluye un mecanismo de Feature Flags (banderas de características) que permite activar o desactivar funcionalidades específicas sin necesidad de recompilar o redesplegar la aplicación. Esto facilita las pruebas A/B, lanzamientos graduales y el control de acceso a funcionalidades experimentales. Para más detalles, consulte la [documentación de Feature Flags](FeatureFlags.md).
 
+### Logging Estructurado
+
+El sistema implementa un sistema de logging estructurado con Serilog que permite registrar eventos y errores de manera eficiente y organizada. Los logs se almacenan en formato JSON y texto plano, se rotan diariamente y se enriquecen con información contextual como el usuario, la solicitud HTTP y el entorno. Para más detalles, consulte la [documentación de Logging](Logging.md).
+
 ## Entidades principales
 
 El sistema gestiona las siguientes entidades principales:
@@ -228,7 +232,7 @@ La configuración del sistema se encuentra en el archivo `appsettings.json` y se
 4. **RateLimiting**: Configuración de limitación de solicitudes
 5. **Redis**: Configuración de caché Redis (opcional)
 6. **EmailSettings**: Configuración del servidor SMTP
-7. **Serilog**: Configuración de logging
+7. **Serilog**: Configuración de logging estructurado
 8. **SessionManagement**: Configuración del sistema de sesiones distribuidas
 9. **FeatureFlags**: Configuración de banderas de características
 
