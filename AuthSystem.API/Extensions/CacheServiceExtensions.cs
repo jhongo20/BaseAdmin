@@ -8,12 +8,12 @@ using System;
 namespace AuthSystem.API.Extensions
 {
     /// <summary>
-    /// Extensiones para registrar los servicios de caché
+    /// Extensiones para registrar servicios de caché
     /// </summary>
     public static class CacheServiceExtensions
     {
         /// <summary>
-        /// Agrega los servicios de caché al contenedor de dependencias
+        /// Añade servicios de caché a la colección de servicios
         /// </summary>
         /// <param name="services">Colección de servicios</param>
         /// <param name="configuration">Configuración</param>
@@ -23,6 +23,12 @@ namespace AuthSystem.API.Extensions
             // Registrar la configuración de caché
             var cacheSettings = configuration.GetSection("CacheSettings").Get<CacheSettings>() ?? new CacheSettings();
             services.Configure<CacheSettings>(configuration.GetSection("CacheSettings"));
+
+            // Registrar servicio de métricas de caché
+            services.AddSingleton<ICacheMetricsService, CacheMetricsService>();
+            
+            // Registrar servicio de invalidación de caché
+            services.AddScoped<ICacheInvalidationService, CacheInvalidationService>();
 
             // Registrar caché en memoria
             services.AddMemoryCache();

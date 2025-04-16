@@ -1,8 +1,13 @@
 using AuthSystem.Domain.Interfaces.Services;
+using AuthSystem.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,132 +15,212 @@ using System.Threading.Tasks;
 namespace AuthSystem.Infrastructure.Services
 {
     /// <summary>
-    /// Implementación del servicio de caché utilizando memoria
+    /// Implementación del servicio de caché en memoria
     /// </summary>
     public class MemoryCacheService : ICacheService
     {
         private readonly IMemoryCache _memoryCache;
         private readonly ILogger<MemoryCacheService> _logger;
+        private readonly ICacheMetricsService _metricsService;
+        private readonly CacheSettings _cacheSettings;
         private readonly ConcurrentDictionary<string, bool> _keys = new ConcurrentDictionary<string, bool>();
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="memoryCache">Caché en memoria</param>
-        /// <param name="logger">Logger</param>
-        public MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryCacheService> logger)
+        public MemoryCacheService(
+            IMemoryCache memoryCache, 
+            ILogger<MemoryCacheService> logger,
+            ICacheMetricsService metricsService = null,
+            IOptions<CacheSettings> cacheSettings = null)
         {
-            _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _memoryCache = memoryCache;
+            _logger = logger;
+            _metricsService = metricsService;
+            _cacheSettings = cacheSettings?.Value ?? new CacheSettings();
         }
 
         /// <inheritdoc />
-        public Task<T> GetAsync<T>(string key, CancellationToken cancellationToken = default)
+        public async Task<T> GetAsync<T>(string key, CancellationToken cancellationToken = default)
         {
+            var stopwatch = Stopwatch.StartNew();
             try
             {
-                if (_memoryCache.TryGetValue(key, out T cachedValue))
+                if (string.IsNullOrEmpty(key))
                 {
-                    _logger.LogDebug("Valor obtenido de la caché: {Key}", key);
-                    return Task.FromResult(cachedValue);
+                    throw new ArgumentException("La clave no puede ser nula o vacía", nameof(key));
                 }
 
-                return Task.FromResult<T>(default);
+                if (_memoryCache.TryGetValue(key, out object value))
+                {
+                    stopwatch.Stop();
+                    _logger.LogTrace("Valor recuperado de la caché: {Key}", key);
+                    _metricsService?.RecordHit(key, stopwatch.ElapsedMilliseconds);
+                    
+                    // Descomprimir si es necesario
+                    if (_cacheSettings.EnableCompression && value is string stringValue)
+                    {
+                        return await CacheCompression.DecompressIfNeededAsync<T>(stringValue);
+                    }
+                    
+                    return value != null ? (T)value : default;
+                }
+
+                stopwatch.Stop();
+                _logger.LogTrace("Valor no encontrado en la caché: {Key}", key);
+                _metricsService?.RecordMiss(key, stopwatch.ElapsedMilliseconds);
+                return default;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener valor de la caché: {Key}", key);
-                return Task.FromResult<T>(default);
+                stopwatch.Stop();
+                _logger.LogError(ex, "Error al recuperar valor de la caché: {Key}", key);
+                return default;
             }
         }
 
         /// <inheritdoc />
-        public Task<bool> SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null, TimeSpan? slidingExpiration = null, CancellationToken cancellationToken = default)
+        public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null, TimeSpan? slidingExpiration = null, CancellationToken cancellationToken = default)
         {
             try
             {
+                if (string.IsNullOrEmpty(key))
+                {
+                    throw new ArgumentException("La clave no puede ser nula o vacía", nameof(key));
+                }
+
                 var options = new MemoryCacheEntryOptions();
                 
                 if (absoluteExpiration.HasValue)
                 {
-                    options.SetAbsoluteExpiration(absoluteExpiration.Value);
+                    options.AbsoluteExpirationRelativeToNow = absoluteExpiration.Value;
                 }
                 
                 if (slidingExpiration.HasValue)
                 {
-                    options.SetSlidingExpiration(slidingExpiration.Value);
+                    options.SlidingExpiration = slidingExpiration.Value;
                 }
 
-                options.RegisterPostEvictionCallback((k, v, reason, state) =>
+                // Registrar expiración
+                options.RegisterPostEvictionCallback((evictedKey, evictedValue, reason, state) =>
                 {
-                    _keys.TryRemove(k.ToString(), out _);
-                    _logger.LogDebug("Clave eliminada de la caché por expiración: {Key}, Razón: {Reason}", k, reason);
+                    if (reason == EvictionReason.Expired)
+                    {
+                        _metricsService?.RecordExpiration(evictedKey.ToString());
+                    }
+                    else if (reason == EvictionReason.Removed)
+                    {
+                        _metricsService?.RecordEviction(evictedKey.ToString());
+                    }
+                    
+                    _keys.TryRemove(evictedKey.ToString(), out _);
+                    _metricsService?.UpdateItemCount(_keys.Count);
                 });
 
-                _memoryCache.Set(key, value, options);
+                // Comprimir si es necesario
+                object valueToStore = value;
+                if (_cacheSettings.EnableCompression)
+                {
+                    string compressedValue = await CacheCompression.CompressIfNeededAsync(value);
+                    valueToStore = compressedValue;
+                }
+
+                _memoryCache.Set(key, valueToStore, options);
                 _keys.TryAdd(key, true);
+                _metricsService?.UpdateItemCount(_keys.Count);
                 
-                _logger.LogDebug("Valor establecido en la caché: {Key}", key);
-                return Task.FromResult(true);
+                _logger.LogTrace("Valor almacenado en la caché: {Key}", key);
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al establecer valor en la caché: {Key}", key);
-                return Task.FromResult(false);
+                _logger.LogError(ex, "Error al almacenar valor en la caché: {Key}", key);
+                return false;
             }
         }
 
         /// <inheritdoc />
-        public Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default)
+        public async Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default)
         {
             try
             {
+                if (string.IsNullOrEmpty(key))
+                {
+                    throw new ArgumentException("La clave no puede ser nula o vacía", nameof(key));
+                }
+
                 _memoryCache.Remove(key);
-                _keys.TryRemove(key, out _);
+                bool removed = _keys.TryRemove(key, out _);
                 
-                _logger.LogDebug("Valor eliminado de la caché: {Key}", key);
-                return Task.FromResult(true);
+                if (removed)
+                {
+                    _metricsService?.RecordEviction(key);
+                    _metricsService?.UpdateItemCount(_keys.Count);
+                }
+                
+                _logger.LogTrace("Valor eliminado de la caché: {Key}", key);
+                return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al eliminar valor de la caché: {Key}", key);
-                return Task.FromResult(false);
+                return false;
             }
         }
 
         /// <inheritdoc />
-        public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+        public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
         {
             try
             {
-                return Task.FromResult(_keys.ContainsKey(key));
+                if (string.IsNullOrEmpty(key))
+                {
+                    throw new ArgumentException("La clave no puede ser nula o vacía", nameof(key));
+                }
+
+                return _keys.ContainsKey(key);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al verificar existencia en la caché: {Key}", key);
-                return Task.FromResult(false);
+                return false;
             }
         }
 
         /// <inheritdoc />
         public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? absoluteExpiration = null, TimeSpan? slidingExpiration = null, CancellationToken cancellationToken = default)
         {
-            var cachedValue = await GetAsync<T>(key, cancellationToken);
-            if (cachedValue != null && !EqualityComparer<T>.Default.Equals(cachedValue, default))
+            var stopwatch = Stopwatch.StartNew();
+            try
             {
-                _logger.LogDebug("Valor obtenido de la caché: {Key}", key);
-                return cachedValue;
-            }
+                if (string.IsNullOrEmpty(key))
+                {
+                    throw new ArgumentException("La clave no puede ser nula o vacía", nameof(key));
+                }
 
-            _logger.LogDebug("Valor no encontrado en caché, obteniendo de la fuente: {Key}", key);
-            var newValue = await factory();
-            
-            if (newValue != null)
-            {
-                await SetAsync(key, newValue, absoluteExpiration, slidingExpiration, cancellationToken);
+                // Intentar obtener de la caché
+                var cachedValue = await GetAsync<T>(key, cancellationToken);
+                if (cachedValue != null && !EqualityComparer<T>.Default.Equals(cachedValue, default))
+                {
+                    stopwatch.Stop();
+                    _metricsService?.RecordHit(key, stopwatch.ElapsedMilliseconds);
+                    return cachedValue;
+                }
+
+                stopwatch.Stop();
+                _metricsService?.RecordMiss(key, stopwatch.ElapsedMilliseconds);
+
+                // Obtener de la fuente
+                var result = await factory();
+                
+                // Almacenar en caché
+                await SetAsync(key, result, absoluteExpiration, slidingExpiration, cancellationToken);
+                
+                return result;
             }
-            
-            return newValue;
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "Error al recuperar o establecer valor en la caché: {Key}", key);
+                return default;
+            }
         }
 
         /// <inheritdoc />
@@ -143,17 +228,35 @@ namespace AuthSystem.Infrastructure.Services
         {
             try
             {
-                var currentValue = await GetAsync<long>(key, cancellationToken);
-                var newValue = currentValue + value;
+                if (string.IsNullOrEmpty(key))
+                {
+                    throw new ArgumentException("La clave no puede ser nula o vacía", nameof(key));
+                }
+
+                long currentValue = 0;
+                if (_memoryCache.TryGetValue(key, out object existingValue))
+                {
+                    if (existingValue is long longValue)
+                    {
+                        currentValue = longValue;
+                    }
+                    else if (existingValue is string stringValue && long.TryParse(stringValue, out long parsedValue))
+                    {
+                        currentValue = parsedValue;
+                    }
+                }
+
+                long newValue = currentValue + value;
+                _memoryCache.Set(key, newValue);
+                _keys.TryAdd(key, true);
+                _metricsService?.UpdateItemCount(_keys.Count);
                 
-                await SetAsync(key, newValue, cancellationToken: cancellationToken);
-                
-                _logger.LogDebug("Contador incrementado en la caché: {Key}, Valor: {Value}", key, newValue);
+                _logger.LogTrace("Valor incrementado en la caché: {Key}, Valor: {Value}", key, newValue);
                 return newValue;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al incrementar contador en la caché: {Key}", key);
+                _logger.LogError(ex, "Error al incrementar valor en la caché: {Key}", key);
                 return 0;
             }
         }
@@ -163,22 +266,40 @@ namespace AuthSystem.Infrastructure.Services
         {
             try
             {
-                var currentValue = await GetAsync<long>(key, cancellationToken);
-                var newValue = currentValue - value;
-                
+                if (string.IsNullOrEmpty(key))
+                {
+                    throw new ArgumentException("La clave no puede ser nula o vacía", nameof(key));
+                }
+
+                long currentValue = 0;
+                if (_memoryCache.TryGetValue(key, out object existingValue))
+                {
+                    if (existingValue is long longValue)
+                    {
+                        currentValue = longValue;
+                    }
+                    else if (existingValue is string stringValue && long.TryParse(stringValue, out long parsedValue))
+                    {
+                        currentValue = parsedValue;
+                    }
+                }
+
+                long newValue = currentValue - value;
                 if (newValue < 0)
                 {
                     newValue = 0;
                 }
                 
-                await SetAsync(key, newValue, cancellationToken: cancellationToken);
+                _memoryCache.Set(key, newValue);
+                _keys.TryAdd(key, true);
+                _metricsService?.UpdateItemCount(_keys.Count);
                 
-                _logger.LogDebug("Contador decrementado en la caché: {Key}, Valor: {Value}", key, newValue);
+                _logger.LogTrace("Valor decrementado en la caché: {Key}, Valor: {Value}", key, newValue);
                 return newValue;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al decrementar contador en la caché: {Key}", key);
+                _logger.LogError(ex, "Error al decrementar valor en la caché: {Key}", key);
                 return 0;
             }
         }
@@ -232,9 +353,11 @@ namespace AuthSystem.Infrastructure.Services
                     if (_keys.TryRemove(key, out _))
                     {
                         count++;
+                        _metricsService?.RecordEviction(key);
                     }
                 }
                 
+                _metricsService?.UpdateItemCount(_keys.Count);
                 _logger.LogDebug("Eliminadas {Count} claves que coinciden con el patrón: {Pattern}", count, pattern);
                 return Task.FromResult(count);
             }
@@ -258,8 +381,10 @@ namespace AuthSystem.Infrastructure.Services
                 {
                     _memoryCache.Remove(key);
                     _keys.TryRemove(key, out _);
+                    _metricsService?.RecordEviction(key);
                 }
                 
+                _metricsService?.UpdateItemCount(0);
                 _logger.LogDebug("Caché limpiada, eliminadas {Count} claves", allKeys.Count);
                 return Task.FromResult(true);
             }

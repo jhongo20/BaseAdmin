@@ -245,100 +245,243 @@ public async Task<long> IncrementCounterAsync(string key, long value = 1, Cancel
 }
 ```
 
-## Consideraciones de rendimiento
+## Métricas de Caché
 
-- **Tamaño de la caché**: Monitorear el uso de memoria de la caché para evitar problemas de rendimiento.
-- **Tiempo de expiración**: Configurar tiempos de expiración adecuados para cada tipo de dato.
-- **Serialización**: La serialización y deserialización de objetos complejos puede afectar el rendimiento.
-- **Distribución**: En entornos distribuidos, utilizar Redis para compartir la caché entre múltiples instancias.
-- **Invalidación**: Implementar mecanismos de invalidación de caché cuando los datos cambien.
+El sistema de caché incluye un servicio de métricas que permite monitorear el rendimiento y uso de la caché. Esto facilita la identificación de problemas y la optimización de la configuración.
 
-## Monitoreo y diagnóstico
+### Métricas disponibles
 
-- **Logs**: El sistema de caché registra eventos de depuración, información y error.
-- **Métricas**: Monitorear el rendimiento de la caché (tasa de aciertos, tasa de fallos, tiempo de respuesta).
-- **Herramientas**: Utilizar herramientas como Redis Desktop Manager para inspeccionar la caché.
+- **Tasa de aciertos (Hit Rate)**: Porcentaje de solicitudes que encontraron el valor en caché.
+- **Tiempo de respuesta**: Tiempo promedio para recuperar valores de la caché.
+- **Número de elementos**: Cantidad de elementos actualmente en caché.
+- **Expiraciones**: Número de elementos que han expirado automáticamente.
+- **Eliminaciones manuales**: Número de elementos eliminados manualmente.
+- **Métricas por tipo**: Estadísticas desglosadas por tipo de clave (LDAP, configuración, usuarios, etc.).
 
-## Extensibilidad
+### Acceso a las métricas
 
-Para añadir soporte para otros proveedores de caché:
+Las métricas de caché están disponibles a través del endpoint `/api/CacheMetrics`, que requiere autenticación con rol de administrador.
 
-1. Implementar la interfaz `ICacheService` para el nuevo proveedor.
-2. Actualizar la clase `CacheServiceExtensions` para registrar el nuevo proveedor.
-3. Añadir la opción correspondiente en la configuración.
+### Ejemplo de uso
+
+```csharp
+// Inyectar el servicio de métricas
+private readonly ICacheMetricsService _metricsService;
+
+public MyService(ICacheMetricsService metricsService)
+{
+    _metricsService = metricsService;
+}
+
+// Obtener un resumen de las métricas
+public Dictionary<string, object> GetCacheMetricsSummary()
+{
+    return _metricsService.GetMetricsSummary();
+}
+
+// Reiniciar las métricas
+public void ResetCacheMetrics()
+{
+    _metricsService.ResetMetrics();
+}
+
+// Exportar las métricas a un archivo JSON
+public async Task<bool> ExportCacheMetricsAsync(string filePath)
+{
+    return await _metricsService.ExportMetricsToJsonAsync(filePath);
+}
+```
+
+## Invalidación Selectiva de Caché
+
+El sistema de caché incluye un mecanismo de invalidación selectiva que permite eliminar entradas específicas de la caché cuando los datos cambian en la fuente.
+
+### Tipos de invalidación
+
+- **Invalidación por usuario**: Elimina todas las entradas de caché relacionadas con un usuario específico.
+- **Invalidación por organización**: Elimina todas las entradas de caché relacionadas con una organización específica.
+- **Invalidación por rol**: Elimina todas las entradas de caché relacionadas con un rol específico.
+- **Invalidación por permiso**: Elimina todas las entradas de caché relacionadas con un permiso específico.
+- **Invalidación de configuración LDAP**: Elimina la configuración LDAP de una organización específica.
+- **Invalidación de información de usuario LDAP**: Elimina la información de un usuario LDAP específico.
+- **Invalidación completa de LDAP**: Elimina todas las entradas de caché relacionadas con LDAP.
+- **Invalidación completa de configuración**: Elimina todas las entradas de caché relacionadas con configuración.
+
+### Acceso a la invalidación
+
+La invalidación de caché está disponible a través del endpoint `/api/cache/invalidate`, que requiere autenticación con rol de administrador.
+
+### Ejemplo de uso
+
+```csharp
+// Inyectar el servicio de invalidación
+private readonly ICacheInvalidationService _cacheInvalidationService;
+
+public MyService(ICacheInvalidationService cacheInvalidationService)
+{
+    _cacheInvalidationService = cacheInvalidationService;
+}
+
+// Invalidar caché de usuario
+public async Task<int> InvalidateUserCacheAsync(string userId)
+{
+    return await _cacheInvalidationService.InvalidateUserCacheAsync(userId);
+}
+
+// Invalidar configuración LDAP
+public async Task<int> InvalidateLdapConfigCacheAsync(string organizationId)
+{
+    return await _cacheInvalidationService.InvalidateLdapConfigCacheAsync(organizationId);
+}
+
+// Invalidar toda la caché de LDAP
+public async Task<int> InvalidateAllLdapCacheAsync()
+{
+    return await _cacheInvalidationService.InvalidateAllLdapCacheAsync();
+}
+```
+
+## Compresión de Datos en Caché
+
+El sistema de caché incluye un mecanismo de compresión que reduce el tamaño de los datos almacenados en caché, lo que permite almacenar más información en la misma cantidad de memoria.
+
+### Funcionamiento
+
+- Los datos se comprimen automáticamente si superan un umbral de tamaño configurable (por defecto, 1KB).
+- La compresión utiliza el algoritmo GZip, que proporciona una buena relación entre velocidad y tasa de compresión.
+- Los datos comprimidos se identifican con un prefijo especial, lo que permite descomprimirlos automáticamente al recuperarlos.
+
+### Configuración
+
+La compresión se configura en el archivo `appsettings.json`:
+
+```json
+"CacheSettings": {
+  "EnableCompression": true,
+  "CompressionThresholdBytes": 1024
+}
+```
+
+- **EnableCompression**: Habilita o deshabilita la compresión de datos.
+- **CompressionThresholdBytes**: Umbral de tamaño en bytes a partir del cual se comprimen los datos.
+
+### Ejemplo de uso
+
+La compresión es transparente para el usuario del sistema de caché. Los datos se comprimen y descomprimen automáticamente según sea necesario.
+
+```csharp
+// Los datos grandes se comprimen automáticamente
+await _cacheService.SetAsync("key", largeObject);
+
+// Los datos se descomprimen automáticamente al recuperarlos
+var largeObject = await _cacheService.GetAsync<LargeObject>("key");
+```
+
+## Extensión a Otros Servicios
+
+El sistema de caché está diseñado para ser fácilmente extensible a otros servicios de la aplicación. A continuación, se muestra cómo aplicar caché a otros servicios:
+
+### Ejemplo: Caché para servicio de usuarios
+
+```csharp
+public class UserService : IUserService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly ICacheService _cacheService;
+    private readonly CacheSettings _cacheSettings;
+
+    public UserService(
+        IUserRepository userRepository,
+        ICacheService cacheService,
+        IOptions<CacheSettings> cacheSettings)
+    {
+        _userRepository = userRepository;
+        _cacheService = cacheService;
+        _cacheSettings = cacheSettings.Value;
+    }
+
+    public async Task<User> GetUserByIdAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // Definir clave de caché
+        string cacheKey = $"user:{userId}";
+        
+        // Intentar obtener de la caché
+        return await _cacheService.GetOrSetAsync(
+            cacheKey,
+            async () => await _userRepository.GetByIdAsync(userId, cancellationToken),
+            _cacheSettings.UserCacheAbsoluteExpiration,
+            null,
+            cancellationToken);
+    }
+
+    public async Task<bool> UpdateUserAsync(User user, CancellationToken cancellationToken = default)
+    {
+        // Actualizar en la base de datos
+        bool result = await _userRepository.UpdateAsync(user, cancellationToken);
+        
+        if (result)
+        {
+            // Invalidar caché
+            string cacheKey = $"user:{user.Id}";
+            await _cacheService.RemoveAsync(cacheKey, cancellationToken);
+        }
+        
+        return result;
+    }
+}
+```
+
+### Ejemplo: Caché para servicio de roles
+
+```csharp
+public class RoleService : IRoleService
+{
+    private readonly IRoleRepository _roleRepository;
+    private readonly ICacheService _cacheService;
+    private readonly CacheSettings _cacheSettings;
+
+    public RoleService(
+        IRoleRepository roleRepository,
+        ICacheService cacheService,
+        IOptions<CacheSettings> cacheSettings)
+    {
+        _roleRepository = roleRepository;
+        _cacheService = cacheService;
+        _cacheSettings = cacheSettings.Value;
+    }
+
+    public async Task<Role> GetRoleByIdAsync(string roleId, CancellationToken cancellationToken = default)
+    {
+        // Definir clave de caché
+        string cacheKey = $"role:{roleId}";
+        
+        // Intentar obtener de la caché
+        return await _cacheService.GetOrSetAsync(
+            cacheKey,
+            async () => await _roleRepository.GetByIdAsync(roleId, cancellationToken),
+            _cacheSettings.RoleCacheAbsoluteExpiration,
+            null,
+            cancellationToken);
+    }
+
+    public async Task<IEnumerable<Role>> GetRolesByUserIdAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // Definir clave de caché
+        string cacheKey = $"user:{userId}:roles";
+        
+        // Intentar obtener de la caché
+        return await _cacheService.GetOrSetAsync(
+            cacheKey,
+            async () => await _roleRepository.GetByUserIdAsync(userId, cancellationToken),
+            _cacheSettings.RoleCacheAbsoluteExpiration,
+            null,
+            cancellationToken);
+    }
+}
+```
 
 ## Conclusión
 
 El sistema de caché implementado proporciona una solución robusta y flexible para almacenar resultados de consultas frecuentes, mejorando significativamente el rendimiento de la aplicación. La abstracción a través de la interfaz `ICacheService` permite cambiar fácilmente entre diferentes proveedores de caché según las necesidades del entorno.
 
-## Ejemplo práctico: Caché en el servicio LDAP
-
-El servicio LDAP utiliza el sistema de caché para almacenar la configuración LDAP y la información de usuarios:
-
-### Caché de configuración LDAP
-
-```csharp
-private async Task<LdapConfig> GetLdapConfigAsync(Guid organizationId, CancellationToken cancellationToken)
-{
-    // Intentar obtener de la caché primero
-    string cacheKey = $"ldap:config:{organizationId}";
-    var cachedConfig = await _cacheService.GetAsync<LdapConfig>(cacheKey, cancellationToken);
-    if (cachedConfig != null)
-    {
-        _logger.LogDebug("LDAP configuration retrieved from cache for organization {OrganizationId}", organizationId);
-        return cachedConfig;
-    }
-
-    // Obtener la configuración de la fuente
-    var config = new LdapConfig
-    {
-        Server = _configuration["LdapSettings:Server"],
-        Port = int.Parse(_configuration["LdapSettings:Port"]),
-        BindDn = _configuration["LdapSettings:BindDN"],
-        BindPassword = _configuration["LdapSettings:BindPassword"],
-        SearchBase = _configuration["LdapSettings:SearchBase"],
-        SearchFilter = _configuration["LdapSettings:SearchFilter"],
-        UserDnFormat = "uid={0}," + _configuration["LdapSettings:SearchBase"]
-    };
-
-    // Guardar en caché
-    TimeSpan cacheExpiration = TimeSpan.FromMinutes(_cacheSettings.ConfigurationCacheAbsoluteExpirationMinutes);
-    await _cacheService.SetAsync(cacheKey, config, cacheExpiration, null, cancellationToken);
-    _logger.LogDebug("LDAP configuration stored in cache for organization {OrganizationId}", organizationId);
-
-    return config;
-}
-```
-
-### Caché de información de usuarios LDAP
-
-```csharp
-public async Task<LdapUserInfo> GetUserInfoAsync(string username, Guid organizationId, CancellationToken cancellationToken = default)
-{
-    try
-    {
-        // Intentar obtener de la caché primero
-        string cacheKey = $"ldap:userinfo:{organizationId}:{username}";
-        var cachedUserInfo = await _cacheService.GetAsync<LdapUserInfo>(cacheKey, cancellationToken);
-        if (cachedUserInfo != null)
-        {
-            _logger.LogDebug("LDAP user info retrieved from cache for {Username}", username);
-            return cachedUserInfo;
-        }
-
-        // Obtener la información del usuario de LDAP
-        // ...
-
-        // Guardar en caché
-        TimeSpan cacheExpiration = TimeSpan.FromMinutes(_cacheSettings.LdapCacheAbsoluteExpirationMinutes);
-        await _cacheService.SetAsync(cacheKey, userInfo, cacheExpiration, null, cancellationToken);
-        _logger.LogDebug("LDAP user info stored in cache for {Username}", username);
-
-        return userInfo;
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error getting LDAP user info for {Username}", username);
-        return null;
-    }
-}
+Con las mejoras implementadas (métricas, invalidación selectiva, compresión y extensión a otros servicios), el sistema de caché es ahora más eficiente, más fácil de monitorear y más flexible para adaptarse a diferentes escenarios de uso.
