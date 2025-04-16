@@ -49,10 +49,10 @@ El proyecto sigue una arquitectura limpia (Clean Architecture) con las siguiente
 - Recuperación de contraseña mediante token seguro
 - Gestión de sesiones distribuidas con capacidad de cierre de sesión forzado
 - Cambio de contraseña con validación de seguridad
-- Reenvío de correos de activación
-- Notificaciones de seguridad para cambios de contraseña
-- Validación de datos de entrada para prevenir inyecciones
-- Bloqueo temporal de cuentas después de múltiples intentos fallidos
+- Listado de usuarios por módulo con información detallada y roles
+- Agrupación de usuarios por módulo para facilitar la administración
+- Verificación de permisos de usuario para rutas específicas
+- Gestión avanzada de asignación de permisos a roles
 
 ### Estructura Organizacional
 - Separación modular (gestión de usuarios, roles, permisos, módulos)

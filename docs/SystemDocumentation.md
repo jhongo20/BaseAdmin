@@ -143,6 +143,16 @@ La API REST proporciona endpoints para todas las funcionalidades del sistema:
 - PUT /api/modules/{id}
 - DELETE /api/modules/{id}
 
+### Gestión de Usuarios por Módulo
+- GET /api/user-modules/module/{moduleId} - Obtener usuarios por módulo
+- GET /api/user-modules/grouped - Obtener usuarios agrupados por módulo
+- GET /api/user-modules/user/{userId}/route-permissions - Verificar permisos de usuario para una ruta
+
+### Gestión de Permisos de Roles
+- POST /api/role-permissions/roles/{roleId}/permissions - Asignar permisos a un rol
+- DELETE /api/role-permissions/roles/{roleId}/permissions/{permissionId} - Eliminar permiso de un rol
+- PUT /api/role-permissions/roles/{roleId}/permissions - Actualizar todos los permisos de un rol
+
 ### Organizaciones
 - GET /api/organizations
 - GET /api/organizations/{id}
@@ -207,6 +217,15 @@ El sistema implementa varias capas de protección:
    - X-Frame-Options
    - X-Content-Type-Options
 7. **Validación de entradas**: Previene inyecciones SQL y XSS
+
+## Documentación adicional
+
+- [Arquitectura del sistema](./Arquitectura.md)
+- [Implementación de seguridad](./ImplementacionSeguridad.md)
+- [Limitación de tasa (Rate Limiting)](./RateLimit.md)
+- [Bloqueo de cuentas](./AccountLockout.md)
+- [Características de seguridad](./SecurityFeatures.md)
+- [Gestión de usuarios por módulo](./UserModulePermissions.md)
 
 ## Datos iniciales
 
