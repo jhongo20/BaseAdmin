@@ -43,6 +43,7 @@ Para más información sobre el proyecto, consulte los siguientes documentos:
 - [Documentación del Sistema](./SystemDocumentation.md): Descripción completa del sistema y sus funcionalidades
 - [Rate Limiting](./RateLimit.md): Configuración detallada del sistema de limitación de solicitudes
 - [Bloqueo de Cuentas](./AccountLockout.md): Sistema de protección contra ataques de fuerza bruta
+- [Características de Seguridad](./SecurityFeatures.md): Documentación completa de todas las características de seguridad avanzadas
 - [API](./API.md): Documentación de los endpoints de la API
 - [Arquitectura](./Arquitectura.md): Descripción detallada de la arquitectura del sistema
 - [Estructura del Proyecto](./Estructura_Proyecto.md): Organización de carpetas y archivos

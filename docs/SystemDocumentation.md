@@ -188,12 +188,25 @@ El sistema implementa varias capas de protección:
    - Duración y número de intentos configurables
    - Desbloqueo manual por administradores
    - Registro detallado de intentos fallidos
-3. **Headers de seguridad**:
+3. **CAPTCHA**:
+   - Se muestra después de cierto número de intentos fallidos
+   - Generación dinámica de imágenes
+   - Validación segura del lado del servidor
+4. **Autenticación de dos factores (2FA)**:
+   - Basada en algoritmo TOTP (Time-based One-Time Password)
+   - Compatible con Google Authenticator, Microsoft Authenticator, etc.
+   - Códigos de recuperación para acceso de emergencia
+5. **Monitoreo de seguridad**:
+   - Detección de patrones sospechosos
+   - Alertas en tiempo real
+   - Notificaciones al equipo de seguridad
+   - Estadísticas y métricas de seguridad
+6. **Headers de seguridad**:
    - Content-Security-Policy
    - X-XSS-Protection
    - X-Frame-Options
    - X-Content-Type-Options
-4. **Validación de entradas**: Previene inyecciones SQL y XSS
+7. **Validación de entradas**: Previene inyecciones SQL y XSS
 
 ## Datos iniciales
 

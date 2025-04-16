@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AuthSystem.Domain.Interfaces;
 using AuthSystem.Domain.Interfaces.Services;
@@ -26,6 +28,50 @@ namespace AuthSystem.API.Controllers
             _unitOfWork = unitOfWork;
             _accountLockoutService = accountLockoutService;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Obtiene una lista de todos los usuarios con su estado de bloqueo
+        /// </summary>
+        /// <returns>Lista de usuarios con su estado de bloqueo</returns>
+        [HttpGet("users")]
+        public async Task<ActionResult<IEnumerable<UserLockoutStatusResponse>>> GetUsersLockoutStatus()
+        {
+            try
+            {
+                var users = await _unitOfWork.Users.GetAllAsync();
+                var result = users.Select(user => 
+                {
+                    var isLocked = _accountLockoutService.IsAccountLocked(user);
+                    var remainingMinutes = 0.0;
+
+                    if (isLocked && user.LockoutEnd.HasValue)
+                    {
+                        remainingMinutes = Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+                    }
+
+                    return new UserLockoutStatusResponse
+                    {
+                        Id = user.Id,
+                        Username = user.Username,
+                        Email = user.Email,
+                        FullName = user.FullName,
+                        Status = user.Status.ToString(),
+                        IsLocked = isLocked,
+                        AccessFailedCount = user.AccessFailedCount,
+                        LockoutEnd = user.LockoutEnd,
+                        RemainingMinutes = remainingMinutes,
+                        LastLoginAt = user.LastLoginAt
+                    };
+                }).ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener la lista de usuarios con su estado de bloqueo");
+                return StatusCode(500, "Error interno del servidor");
+            }
         }
 
         /// <summary>

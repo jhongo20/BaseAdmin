@@ -120,6 +120,21 @@ namespace AuthSystem.Domain.Entities
         public DateTime? ActivatedAt { get; set; }
 
         /// <summary>
+        /// Indica si la autenticación de dos factores está habilitada para el usuario
+        /// </summary>
+        public bool TwoFactorEnabled { get; set; }
+
+        /// <summary>
+        /// Clave secreta para la autenticación de dos factores
+        /// </summary>
+        public string TwoFactorSecretKey { get; set; }
+
+        /// <summary>
+        /// Token de recuperación para la autenticación de dos factores
+        /// </summary>
+        public string TwoFactorRecoveryCode { get; set; }
+
+        /// <summary>
         /// Relación con las sesiones activas del usuario
         /// </summary>
         public virtual ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();

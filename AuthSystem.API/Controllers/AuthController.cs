@@ -25,19 +25,22 @@ namespace AuthSystem.API.Controllers
         private readonly ILdapService _ldapService;
         private readonly IAccountLockoutService _accountLockoutService;
         private readonly ILogger<AuthController> _logger;
+        private readonly IConfiguration _configuration;
 
         public AuthController(
             IUnitOfWork unitOfWork,
             IJwtService jwtService,
             ILdapService ldapService,
             IAccountLockoutService accountLockoutService,
-            ILogger<AuthController> logger)
+            ILogger<AuthController> logger,
+            IConfiguration configuration)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
             _ldapService = ldapService;
             _accountLockoutService = accountLockoutService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         [HttpPost("login")]
@@ -48,6 +51,45 @@ namespace AuthSystem.API.Controllers
                 if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
                 {
                     return BadRequest("Username and password are required");
+                }
+
+                // Verificar si se requiere CAPTCHA
+                if (_configuration.GetValue<bool>("AccountLockout:EnableCaptcha", true))
+                {
+                    var captchaService = HttpContext.RequestServices.GetRequiredService<ICaptchaService>();
+                    
+                    // Si se proporcionó un CAPTCHA, validarlo
+                    if (!string.IsNullOrEmpty(request.CaptchaId) && !string.IsNullOrEmpty(request.CaptchaResponse))
+                    {
+                        bool isCaptchaValid = await captchaService.ValidateCaptchaAsync(request.CaptchaId, request.CaptchaResponse);
+                        if (!isCaptchaValid)
+                        {
+                            // Generar un nuevo CAPTCHA
+                            var newCaptcha = await captchaService.GenerateCaptchaAsync();
+                            return BadRequest(new 
+                            { 
+                                message = "CAPTCHA inválido. Por favor, intente nuevamente.",
+                                captchaRequired = true,
+                                captchaId = newCaptcha.CaptchaId,
+                                captchaImageUrl = newCaptcha.CaptchaImageUrl
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // Verificar si el usuario necesita CAPTCHA
+                        var captchaRequirement = await captchaService.CheckCaptchaRequirementAsync(request.Username);
+                        if (captchaRequirement.CaptchaRequired)
+                        {
+                            return BadRequest(new
+                            {
+                                message = captchaRequirement.Message,
+                                captchaRequired = true,
+                                captchaId = captchaRequirement.CaptchaId,
+                                captchaImageUrl = captchaRequirement.CaptchaImageUrl
+                            });
+                        }
+                    }
                 }
 
                 User user = await _unitOfWork.Users.GetByUsernameAsync(request.Username);
