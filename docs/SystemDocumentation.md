@@ -52,6 +52,10 @@ El sistema utiliza un enfoque de sesiones distribuidas que permite gestionar las
 
 El sistema implementa un mecanismo robusto para la revocación de tokens JWT antes de su expiración natural, permitiendo invalidar sesiones en escenarios como cambios de contraseña, detección de actividad sospechosa o cierre de sesión manual. Para más detalles, consulte la [documentación de revocación de tokens](TokenRevocation.md).
 
+### Feature Flags
+
+El sistema incluye un mecanismo de Feature Flags (banderas de características) que permite activar o desactivar funcionalidades específicas sin necesidad de recompilar o redesplegar la aplicación. Esto facilita las pruebas A/B, lanzamientos graduales y el control de acceso a funcionalidades experimentales. Para más detalles, consulte la [documentación de Feature Flags](FeatureFlags.md).
+
 ## Entidades principales
 
 El sistema gestiona las siguientes entidades principales:
@@ -156,6 +160,12 @@ La API REST proporciona endpoints para todas las funcionalidades del sistema:
 - GET /api/sessions/stats
 - POST /api/sessions/cleanup
 
+### Feature Flags
+- GET /api/v1/feature-flags
+- GET /api/v1/feature-flags/{featureName}
+- PUT /api/v1/feature-flags/{featureName}
+- POST /api/v1/feature-flags/reload
+
 ### Usuarios
 - GET /api/users
 - GET /api/users/{id}
@@ -220,6 +230,7 @@ La configuración del sistema se encuentra en el archivo `appsettings.json` y se
 6. **EmailSettings**: Configuración del servidor SMTP
 7. **Serilog**: Configuración de logging
 8. **SessionManagement**: Configuración del sistema de sesiones distribuidas
+9. **FeatureFlags**: Configuración de banderas de características
 
 ## Seguridad
 

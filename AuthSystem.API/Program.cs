@@ -55,6 +55,7 @@ builder.Services.AddApplicationServices();
 // Registrar servicios de la aplicación
 builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
 builder.Services.AddScoped<ISessionManagementService, SessionManagementService>();
+builder.Services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 
 // Configurar autenticación JWT
 builder.Services.AddAuthentication(options =>
@@ -162,6 +163,7 @@ app.UseHttpsRedirection();
 app.UseSecurityHeaders();
 app.UseTokenRevocation();
 app.UseSessionValidation();
+app.UseFeatureFlags();
 app.UseAuthentication();
 app.UseAuthorization();
 
